@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jsql.mapper.UrlMapper">
+
+  <!-- 根据url查询t_url -->
+  <select id="selectByUrl" resultType="com.jsql.model.bean.Url">
+  		select * from t_url u where u.url = #{url}
+  </select>
+  
+  <!-- 插入url -->
+  <insert id="insertUrl" parameterType="com.jsql.model.bean.Url">
+  		insert into t_url(id,url,access_vector,access_complexity,authentication,confimpact,integimpact,availimpact) value(#{url.id},#{url.url},#{url.accessVector},#{url.accessComplexity},#{url.authentication},#{url.confImpact},#{url.integImpact},#{url.availImpact})
+  </insert>
+  
+  <!-- 根据urlId删除t_sub_url数据-->
+  <delete id="deleteSubUrl" parameterType="string">
+  		delete from t_sub_url where url_id = #{urlId}
+  </delete>
+  
+  <!-- 根据批量插入t_sub_url数据-->
+  <insert id ="batchInsertSubUrl" parameterType="java.util.List" >
+        insert into t_sub_url(url_id, crawl_url, is_injection)
+        	values
+	         <foreach collection ="list" item="url" index= "index" separator =",">
+	             (
+	             #{url.urlId},
+	             #{url.crawlUrl},
+	             #{url.isInjection}
+	             )
+	         </foreach >
+   </insert >
+   
+   <!-- 根据删除t_url所有数据-->
+   <delete id="deleteUrl" >
+  		delete from t_url 
+  	</delete>
+  	
+  	<!-- 根据对象查询t_sub_url数据-->
+  	<select id="selectBySubUrl" resultType="com.jsql.model.bean.SubUrl">
+  		select * from t_sub_url u where u.crawl_url= #{subUrl}
+  	</select>
+  	
+  	<!-- 更新t_sub_url注入状态-->
+  	<update id="updateSubUrlInjectionStatus" >
+  		update 
+  			t_sub_url s 
+  		set 
+  			s.is_injection = #{subUrl.isInjection},
+  		<choose>
+	        <when test="type == 'blind'">
+	            s.blind_injection = #{subUrl.blindInjection}
+	        </when>
+	        <when test="type == 'error'">
+	            s.error_injection = #{subUrl.errorInjection}
+	        </when>
+	        <when test="type == 'time'">
+	           	s.time_injection = #{subUrl.timeInjection}
+	        </when>
+	        <otherwise>
+	            s.normal_injection = #{subUrl.normalInjection}
+	        </otherwise>
+	    </choose> 			  			
+  		where s.crawl_url = #{subUrl.crawlUrl}
+  	</update>
+   
+   <!-- 插入t_sub_url-->
+   <insert id="insertSubUrl" parameterType="com.jsql.model.bean.SubUrl">
+   		insert into t_sub_url(url_id,crawl_url,is_injection,blind_injection,error_injection,time_injection,normal_injection) value(#{subUrl.urlId},#{subUrl.crawlUrl},#{subUrl.isInjection},#{subUrl.blindInjection},#{subUrl.errorInjection},#{subUrl.timeInjection},#{subUrl.normalInjection})
+   </insert>
+   
+   <!-- 查询t_sub_url所有数据-->
+   <select id="selectSubUrlListById" resultType="com.jsql.model.bean.SubUrl" parameterType="string">
+   		select * from t_sub_url where url_id = #{urlId}
+   </select>
+   
+   <!-- 查询t_url所有数据-->
+   <select id="selectUrlAll" resultType="com.jsql.model.bean.Url">
+   		select * from t_url
+   </select>
+   
+   <!-- 根据subUrl更新t_sub_url为无注入状态-->
+   <update id="setNoInjectionStatus" parameterType="string">
+   		update 
+  			t_sub_url s 
+  		set 
+  			s.is_injection = '0'
+  		where s.crawl_url = #{subUrl} 
+  			
+   </update>
+   
+   <!-- 根据id更新t_url为无需认证状态-->
+   <update id="updateAuthenticationStatus" parameterType="string">
+   		update 
+  			t_url u 
+  		set 
+  			u.authentication = '0'
+  		where u.id = #{id} 
+   </update>
+   
+   <!-- 统计查询t_sub_url机密安全性性数据-->
+   <select id="countConfImpactById" resultType="float" parameterType="String">
+   		select
+			sum(case when s.is_injection='1' then 1 else 0 end )/count(*)  rate
+		from
+			t_sub_url s
+		where url_id = #{urlId}
+   </select>
+   
+   <!-- 追加备注-->
+   <update id="addMark" parameterType="String">
+   		update 
+   			t_sub_url s 
+   		set 
+   			s.remark=case when s.remark is null then #{remark} else CONCAT(s.remark,#{remark})  end 
+   		where 
+   			s.crawl_url=#{url}
+   </update>
+   
+   <!-- 追加漏洞个数-->
+   <update id="addBugNum" parameterType="String">
+   		update 
+   			t_sub_url s 
+   		set 
+   			s.bug_num=s.bug_num+1
+   		where 
+   			s.crawl_url=#{url}
+   </update>
+   
+   <!-- 根据url更新数据库类型-->
+   <update id="updateDateBaseByUrl" parameterType="String">
+   		update 
+   			t_url u
+   		set 
+   		    u.database = #{database}
+   		where 
+   			u.url = #{url}
+   </update>
+   
+   <!-- 根据id查询漏洞数量-->
+   <select id="selectCountBugNumById" parameterType="String" resultType="int">
+   		select sum(s.bug_num) from t_sub_url s where s.url_id=#{id}
+   </select>
+   
+</mapper>

@@ -1,0 +1,12 @@
+tooltip: Transform SQL keywords to random case
+description: Transform SQL keywords to random case
+group: 
+javascript: |
+ load('src/main/resources/tamper/js/random-case.js');
+ 
+ var tampering = function(sql) {
+     // Name of database and table is case sensitive on Linux (column name is case insensitive)
+     // random-case.js ignore case for expression `database`.`table`
+     return randomCase(sql)
+         .replace(/0X/g,'0x');
+ }
